@@ -13,6 +13,7 @@ struct ContentView: View {
     @State private var usedWords = [String]()
     @State private var rootWord = ""
     @State private var newWord = ""
+    @State private var points = 0
     
     
     // this is for an error alert
@@ -21,6 +22,11 @@ struct ContentView: View {
     @State private var showingError = false
     
     func startGame() {
+        
+        // remove words from list..
+        usedWords = [String]()
+        // reset points
+        points = 0
         // 1. Find the URL for start.txt in our app bundle
         if let startWordsURL = Bundle.main.url(forResource: "start", withExtension: "txt") {
             // 2. Load start.txt into a string
@@ -60,8 +66,21 @@ struct ContentView: View {
         return true
     }
     
+    func isLong(word: String) -> Bool
+    {
+        if word.count < 3
+        {
+            return false
+        }
+        else
+        {
+            return true
+        }
+    }
+    
     // this method will check if the word entered is actually a real word. It leverages the UITextChecker class...
     func isReal(word: String) -> Bool {
+        
         let checker = UITextChecker()
         let range = NSRange(location: 0, length: word.utf16.count)
         let misspelledRange = checker.rangeOfMisspelledWord(in: word, range: range, startingAt: 0, wrap: false, language: "en")
@@ -94,7 +113,11 @@ struct ContentView: View {
             wordError(title: "Word not possible", message: "That isn't a real word.")
             return
         }
-
+        guard isLong(word: answer) else {
+            wordError(title: "Word is short", message: "Word must be at least 3 letters long.")
+            return
+        }
+        points += answer.count
         usedWords.insert(answer, at: 0)
         newWord = ""
     }
@@ -117,12 +140,25 @@ struct ContentView: View {
                     Image(systemName: "\($0.count).circle")
                     Text($0)
                 }
+                Text("Total Score: \(points)")
+                    .font(.largeTitle)
+                    .bold()
+                    .foregroundColor(.blue)
             }
             .navigationBarTitle(rootWord)
+            .navigationBarItems(trailing: HStack {
+                Button("New Round") {
+                    self.startGame()
+                }
+            })
             .onAppear(perform: startGame)
             .alert(isPresented: $showingError) {
                 Alert(title: Text(errorTitle), message: Text(errorMessage), dismissButton: .default(Text("OK")))
             }
+        
+        
+        
+
         }
     }
 }
